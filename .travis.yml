@@ -38,6 +38,9 @@ install:
   - pip install txws
 
 script:
+  - dpkg-query -L libgnuradio-runtime3.7.10
+  - python -c 'import sys; print "\n".join(sys.path)'
+  
   # PATH in order to call jshint, which was installed non-globally above.
   - PATH="node_modules/.bin/:$PATH" ./lint.sh
   
