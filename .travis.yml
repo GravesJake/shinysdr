@@ -15,7 +15,7 @@ addons:
       - sourceline: 'ppa:myriadrf/drivers'
       - sourceline: 'ppa:myriadrf/gnuradio'
     packages:
-      - gnuradio
+      - gnuradio-dev
       # - gr-air-modes  # Available version is too old.
       - gr-osmosdr
       - libhamlib-utils
@@ -38,7 +38,7 @@ install:
   - pip install txws
 
 script:
-  - dpkg-query -L libgnuradio-runtime3.7.10
+  - dpkg-query -L gnuradio-dev
   - python -c 'import sys; print "\n".join(sys.path)'
   
   # PATH in order to call jshint, which was installed non-globally above.
