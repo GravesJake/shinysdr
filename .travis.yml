@@ -38,8 +38,8 @@ install:
   - pip install txws
 
 script:
-  - dpkg-query -L gnuradio-dev
   - python -c 'import sys; print "\n".join(sys.path)'
+  - find /usr -path '*/gnuradio/__init__.py'
   
   # PATH in order to call jshint, which was installed non-globally above.
   - PATH="node_modules/.bin/:$PATH" ./lint.sh
