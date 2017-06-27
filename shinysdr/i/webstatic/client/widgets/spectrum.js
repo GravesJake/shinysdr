@@ -45,6 +45,8 @@ define(['./basic', './dbui',
   const numberT = types.numberT;
   
   const exports = Object.create(null);
+
+  var drawFlag = false;   // JG using this to try and prevent initial drawing of band labels
   
   // Widget for a monitor block
   function Monitor(config) {
@@ -1071,6 +1073,7 @@ define(['./basic', './dbui',
     });
     
     function draw() {
+      console.log("function draw");     // JG added this
       minLevel = minLevelCell.depend(draw);
       maxLevel = maxLevelCell.depend(draw);
       let count = 0;  // sanity check
@@ -1157,16 +1160,22 @@ define(['./basic', './dbui',
       };
       return el;
     }
+
     function addBand(record) {
       const el = document.createElement('span');
+      el.id = "testBandID"; // JG added this, not sure how else to access with event handlers
       el.className = 'freqscale-band';
       el.textContent = record.label || record.mode;
+      
       el.my_update = function () {
+        console.log("\n\naddBand:el.my_update = function()\n\n");   // JG added this 
         var labelLower = Math.max(record.lowerFreq, lower);
         var labelUpper = Math.min(record.upperFreq, upper);
         el.style.left = view.freqToCSSLeft(labelLower);
         el.style.width = view.freqToCSSLength(labelUpper - labelLower);
         el.style.bottom = pickY(record.lowerFreq, record.upperFreq) + 'em';
+        // JG this style stuff just says where to draw the band labels on the window
+        // JG they all get drawn on top of each other when they're gone, but still drawn
       };
       return el;
     }
@@ -1195,6 +1204,7 @@ define(['./basic', './dbui',
     var scale_fine2 = 2;
     
     var draw = config.boundedFn(function drawImpl() {
+      console.log("var draw");  // JG added this
       view.n.listen(draw);
       lower = view.leftFreq();
       upper = view.rightFreq();
@@ -1235,11 +1245,47 @@ define(['./basic', './dbui',
       query.n.listen(draw);
       query.forEach(function (record) {
         var label = labelCache.add(record);
-        if (label) label.my_update();
+        if (label) label.my_update();   // this just does the style stuff (I think)
       });
       labelCache.flush();
     });
     draw.scheduler = config.scheduler;
+
+    // JG added this stuff
+    // this is a messy way to get the window to not display band labels on "startup"
+    // startup as in when the user mouses over any of the window
+    // should find a better way to do this as it doesn't guarantee that the labels won't be drawn on startup
+    // and I still need to change labels to only draw one label and draw it where the mouse is on the spectrum
+    if (!drawFlag) {
+      document.addEventListener("mouseover", menuFunc);
+      function menuFunc() {
+        console.log("menuFunc");
+        console.log("drawFlag: ", drawFlag);
+        document.getElementById("testBandID").style.display = 'none';
+        document.removeEventListener("mouseover", menuFunc);
+        drawFlag = true;
+        console.log("drawFlag: ", drawFlag);
+      }
+    }
+
+    document.getElementById("rf-spectrum-monitor").addEventListener("mouseover", drawFunc);
+    function drawFunc() {
+      console.log("drawFunc");
+      //draw();
+      document.getElementById("testBandID").style.display = 'block';
+    }
+
+    document.getElementById("rf-spectrum-monitor").addEventListener("mouseout", hideFunc);
+    function hideFunc() {
+      console.log("hideFunc");
+      document.getElementById("testBandID").style.display = 'none';
+    }
+    // this successfully draws the original annotation method on mouseover of the RF Spectrum window
+    // but it persists when mouse is no longer over the RF window
+    // now I need to modify what draw actually does with the annotations
+    // JG end of stuff I added here
+
+    alert("this should appear, running from repo NEW");
     draw();
   }
   
