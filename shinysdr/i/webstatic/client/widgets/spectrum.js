@@ -1163,10 +1163,14 @@ define(['./basic', './dbui',
 
     function addBand(record) {
       const el = document.createElement('span');
-      el.id = "testBandID"; // JG added this, not sure how else to access with event handlers
       el.className = 'freqscale-band';
+      /* 
+        JG this is where the label text is set, could possibly use this method and make our own
+        text drawing function and pull in the record.label || record.mode content to our draw
+        or possibly just modify the existing draw to do what we want
+      */
       el.textContent = record.label || record.mode;
-      
+      //el.textContent = "textContent";
       el.my_update = function () {
         console.log("\n\naddBand:el.my_update = function()\n\n");   // JG added this 
         var labelLower = Math.max(record.lowerFreq, lower);
@@ -1251,41 +1255,56 @@ define(['./basic', './dbui',
     });
     draw.scheduler = config.scheduler;
 
-    // JG added this stuff
-    // this is a messy way to get the window to not display band labels on "startup"
-    // startup as in when the user mouses over any of the window
-    // should find a better way to do this as it doesn't guarantee that the labels won't be drawn on startup
-    // and I still need to change labels to only draw one label and draw it where the mouse is on the spectrum
+    /*
+      JG added this stuff
+      this is a messy way to get the window to not display band labels on "startup"
+      startup as in when the user mouses over any of the window
+      should find a better way to do this as it doesn't guarantee that the labels won't be drawn on startup
+      and I still need to change labels to only draw one label and draw it where the mouse is on the spectrum
+    */
+
+    // initialize hidden labels
     if (!drawFlag) {
       document.addEventListener("mouseover", menuFunc);
       function menuFunc() {
         console.log("menuFunc");
         console.log("drawFlag: ", drawFlag);
-        document.getElementById("testBandID").style.display = 'none';
+        var labels = document.getElementsByClassName("freqscale-band");
+        for (var i = 0; i < labels.length; ++i) {
+          document.getElementsByClassName("freqscale-band")[i].style.display = 'none';
+        }
         document.removeEventListener("mouseover", menuFunc);
         drawFlag = true;
         console.log("drawFlag: ", drawFlag);
       }
     }
 
+    // draw labels on RF Spectrum window mouseover
     document.getElementById("rf-spectrum-monitor").addEventListener("mouseover", drawFunc);
     function drawFunc() {
       console.log("drawFunc");
       //draw();
-      document.getElementById("testBandID").style.display = 'block';
+      var labels = document.getElementsByClassName("freqscale-band");
+        for (var i = 0; i < labels.length; ++i) {
+          document.getElementsByClassName("freqscale-band")[i].style.display = 'block';
+        }
     }
 
+    // hide labels on RF Spectrum window mouseout
     document.getElementById("rf-spectrum-monitor").addEventListener("mouseout", hideFunc);
     function hideFunc() {
       console.log("hideFunc");
-      document.getElementById("testBandID").style.display = 'none';
+      var labels = document.getElementsByClassName("freqscale-band");
+        for (var i = 0; i < labels.length; ++i) {
+          document.getElementsByClassName("freqscale-band")[i].style.display = 'none';
+        }
     }
-    // this successfully draws the original annotation method on mouseover of the RF Spectrum window
-    // but it persists when mouse is no longer over the RF window
-    // now I need to modify what draw actually does with the annotations
-    // JG end of stuff I added here
-
-    alert("this should appear, running from repo NEW");
+    /*
+      This successfully draws the original annotation method on mouseover of the RF Spectrum window
+      but it persists when mouse is no longer over the RF window
+      now I need to modify what draw actually does with the annotations
+      JG end of stuff I added here
+    */
     draw();
   }
   
