@@ -1175,8 +1175,8 @@ define(['./basic', './dbui',
       */
       // this draws a box on bottom, not what we need
       var rfWindow = document.getElementById("rf-spectrum-monitor");
-      var textBox = rfWindow.appendChild(document.createElement('div'));
-      textBox.textContent = record.label || record.mode;  // this looks really bad, prints a bunch of times, maybe because it's a div?
+      //var textBox = rfWindow.appendChild(document.createElement('div'));
+      //textBox.textContent = record.label || record.mode;  // this looks really bad, prints a bunch of times, maybe because it's a div?
       console.log("addBand");
       // JG add end
 
@@ -1206,16 +1206,27 @@ define(['./basic', './dbui',
           //console.log("left: ", left);
           //console.log("width: ", width);
 
-          // this draws the correct label on mouseover but the mouse has to leave the RF Spectrum 
-          // window to change which label gets drawn
-          if (mouse_x_pos > left && mouse_x_pos < left + width) {
-            //console.log("if success");
-            el.style.display = 'block';
+          // this draws the correct label on mouseover but breaks when the window is zoomed in or out
+          // maybe check for window zoom before doing this to fix
+          // I think it's because when a zoom happens, el.style.width gets bigger or smaller but 
+          // we're accounting for the entire width including the part that is now off the window
+          // and not the the part of the label that is currently included in the window
+
+          // check to see if Labels checkbox is checked, if it is then use this method
+          // to draw labels on mouseover. This works but it's really slow and labels don't 
+          // revert to orignal drawing method when box gets unchecked
+          var box = document.getElementById("cb");
+          if (box.checked) {
+            if (mouse_x_pos > left && mouse_x_pos < left + width) {
+              //console.log("if success");
+              el.style.display = 'block';
+            }
+            else {
+              //console.log("else success");
+              el.style.display = 'none';
+            }
           }
-          else {
-            //console.log("else success");
-            el.style.display = 'none';
-          }
+          
         })
         // JG add end
       };
@@ -1302,7 +1313,7 @@ define(['./basic', './dbui',
 
       Add a menu button to select/deselect this label method
     */
-
+/*
     // initialize hidden labels, this can go away once we have the menu button
     if (!drawFlag) {
       document.addEventListener("mouseover", menuFunc);
@@ -1318,6 +1329,7 @@ define(['./basic', './dbui',
         console.log("drawFlag: ", drawFlag);
       }
     }
+*/
 /*
     // draw labels on RF Spectrum window mouseover
     document.getElementById("rf-spectrum-monitor").addEventListener("mouseover", drawFunc);
