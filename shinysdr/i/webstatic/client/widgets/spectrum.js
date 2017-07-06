@@ -1173,7 +1173,7 @@ define(['./basic', './dbui',
 
         Add a button in the menu for the user to select or deselect the new label method
       */
-      // this draws a box on bottom, not what we need
+      // this rfWindow textBox draws a box on bottom, not what we need
       var rfWindow = document.getElementById("rf-spectrum-monitor");
       //var textBox = rfWindow.appendChild(document.createElement('div'));
       //textBox.textContent = record.label || record.mode;  // this looks really bad, prints a bunch of times, maybe because it's a div?
@@ -1190,14 +1190,17 @@ define(['./basic', './dbui',
         el.style.bottom = pickY(record.lowerFreq, record.upperFreq) + 'em';
 
         // JG add start
-        var mouse_x_pos;
+        var mouse_x_pos, mouse_y_pos;
         var left;
         var width;
 
+        // mousemove works but it doesn't update the label drawing method on checkbox tick
+        // until the mouse is moved so I might need to rearrange how this happens
         var offset = $("#rf-spectrum-monitor").offset();
         $(document).mousemove(function(e) {
           //console.log("mousemove function");
           mouse_x_pos = e.pageX - offset.left;
+          mouse_y_pos = e.pageY;  // not sure about offset for y
           //console.log("mouse_x_pos: ", mouse_x_pos);
           //console.log("el.style.left: ", el.style.left);
           //console.log("el.style.width: ", el.style.width);
@@ -1213,10 +1216,16 @@ define(['./basic', './dbui',
           // and not the the part of the label that is currently included in the window
 
           // check to see if Labels checkbox is checked, if it is then use this method
-          // to draw labels on mouseover. This works but it's really slow and labels don't 
-          // revert to orignal drawing method when box gets unchecked
-          var box = document.getElementById("cb");
+          // to draw labels on mouseover. This works but it's really slow
+          var box = document.getElementById("cbTest");
+
+          // now that mouseover logic is "working" I need to create a new method of drawing
+          // a label on mouse position when mousing over the spectrum, or finding a way to draw
+          // the existing label on mouse position instead of at the bottom
           if (box.checked) {
+            // thinking about changing the draw to take into account mouse position
+            // along the frequency bar, like the vertical white slider with the frequency
+            // instead of basing it on current label dimensions
             if (mouse_x_pos > left && mouse_x_pos < left + width) {
               //console.log("if success");
               el.style.display = 'block';
@@ -1226,7 +1235,8 @@ define(['./basic', './dbui',
               el.style.display = 'none';
             }
           }
-          
+          else
+            el.style.display = 'block';
         })
         // JG add end
       };
