@@ -50,7 +50,7 @@ define(['./basic', './dbui',
   var global_rec_freq_now;  // JG trying to use rec_freq_now inside of addBand
 
   var lvf, rvf, w, h;       // JG moved these from function WaterFallPlot() because I need these elsewhere
-  // JG should find a cleaner way to do this
+  // JG these get declared again on line ~922, should find a better way to do this
   
   // Widget for a monitor block
   function Monitor(config) {
@@ -925,11 +925,6 @@ define(['./basic', './dbui',
     }
     function drawHair(freq) {
       var x = freqToCoord(freq);
-      console.log("x freqToCoord: ", x);
-      console.log("w freqToCoord: ", w);
-      console.log("lvf freqToCoord: ", lvf);
-      console.log("rvf freqToCoord: ", rvf);
-      console.log("freq freqToCoord: ", freq);
       x = Math.floor(x) + 0.5;
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -1189,7 +1184,7 @@ define(['./basic', './dbui',
         el.style.width = view.freqToCSSLength(labelUpper - labelLower);
         el.style.bottom = pickY(record.lowerFreq, record.upperFreq) + 'em';
 
-        // JG add start
+  // JG add start
         var mouse_x_pos, mouse_y_pos;
         var left;
         var width;
@@ -1197,6 +1192,7 @@ define(['./basic', './dbui',
         // mousemove works but it doesn't update the label drawing method on checkbox tick
         // until the mouse is moved so I might need to change how this happens
         var offset = $("#rf-spectrum-monitor").offset();
+        var window_width = $("#rf-spectrum-monitor").width();
         $(document).mousemove(function(e) {
           //console.log("mousemove function");
           mouse_x_pos = e.pageX - offset.left;
@@ -1206,22 +1202,22 @@ define(['./basic', './dbui',
           //console.log("el.style.width: ", el.style.width);
           left = parseFloat(view.freqToCSSLeft(labelLower));
           width = parseFloat(view.freqToCSSLength(labelUpper - labelLower));
+          /*
           console.log("\n\n\n\n\n\n");
           console.log("lower: ", labelLower);
           console.log("upper: ", labelUpper);
           console.log("\n\n\n\n\n\n");
           //console.log("left: ", left);
           //console.log("width: ", width);
-          
+          */
           var box = document.getElementById("cbTest");
 
           // converting mouse position to frequency, these come from WaterFallPlot (moved them to global)
           var mouse_freq = (mouse_x_pos * (rvf - lvf)) / w + lvf;
 
-          // check to see if Labels checkbox is checked, if it is then use this method
-          // to draw labels on mouseover. This works but it's really slow
+          // check to see if Labels checkbox is checked, if it is then use this method to draw labels on mouseover. This works but it's really slow
           if (box.checked) {
-            if (mouse_freq > labelLower && mouse_freq < labelUpper) {
+            if (mouse_freq > labelLower && mouse_freq < labelUpper && mouse_x_pos > 0 && mouse_x_pos < window_width) {
               //console.log("if success");
               el.style.display = 'block';
             }
@@ -1233,7 +1229,7 @@ define(['./basic', './dbui',
           else
             el.style.display = 'block';
         })
-        // JG add end
+  // JG add end
       };
       return el;
     }
@@ -1308,64 +1304,6 @@ define(['./basic', './dbui',
       labelCache.flush();
     });
     draw.scheduler = config.scheduler;
-
-    /*
-      JG added this stuff
-      this is a messy way to get the window to not display band labels on "startup"
-      startup as in when the user mouses over any of the window
-      should find a better way to do this as it doesn't guarantee that the labels won't be drawn on startup
-      and I still need to change labels to only draw one label and draw it where the mouse is on the spectrum
-
-      Add a menu button to select/deselect this label method
-    */
-/*
-    // initialize hidden labels, this can go away once we have the menu button
-    if (!drawFlag) {
-      document.addEventListener("mouseover", menuFunc);
-      function menuFunc() {
-        console.log("menuFunc");
-        console.log("drawFlag: ", drawFlag);
-        var labels = document.getElementsByClassName("freqscale-band");
-        for (var i = 0; i < labels.length; ++i) {
-          document.getElementsByClassName("freqscale-band")[i].style.display = 'none';
-        }
-        document.removeEventListener("mouseover", menuFunc);
-        drawFlag = true;
-        console.log("drawFlag: ", drawFlag);
-      }
-    }
-*/
-/*
-    // draw labels on RF Spectrum window mouseover
-    document.getElementById("rf-spectrum-monitor").addEventListener("mouseover", drawFunc);
-    function drawFunc() {
-      console.log("drawFunc");
-      //draw();
-      var labels = document.getElementsByClassName("freqscale-band");
-        for (var i = 0; i < labels.length; ++i) {
-          // maybe try adding something here to check mouse location on the window
-          // and only draw a label if the mouse is within the width of that label
-          // so there can be at most one label drawn at a time
-          document.getElementsByClassName("freqscale-band")[i].style.display = 'block';
-        }
-    }
-   
-    // hide labels on RF Spectrum window mouseout
-    document.getElementById("rf-spectrum-monitor").addEventListener("mouseout", hideFunc);
-    function hideFunc() {
-      console.log("hideFunc");
-      var labels = document.getElementsByClassName("freqscale-band");
-        for (var i = 0; i < labels.length; ++i) {
-          document.getElementsByClassName("freqscale-band")[i].style.display = 'none';
-        }
-    }
-*/
-    /*
-      This successfully draws the original annotation method on mouseover of the RF Spectrum window
-      but it persists when mouse is no longer over the RF window
-      now I need to modify what draw actually does with the annotations
-      JG end of stuff I added here
-    */
     draw();
   }
   
