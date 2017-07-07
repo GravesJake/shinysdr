@@ -47,6 +47,10 @@ define(['./basic', './dbui',
   const exports = Object.create(null);
 
   var drawFlag = false;   // JG using this to try and prevent initial drawing of band labels
+  var global_rec_freq_now;  // JG trying to use rec_freq_now inside of addBand
+
+  var lvf, rvf, w, h;       // JG moved these from function WaterFallPlot() because I need these elsewhere
+  // JG should find a cleaner way to do this
   
   // Widget for a monitor block
   function Monitor(config) {
@@ -288,7 +292,7 @@ define(['./basic', './dbui',
     
     CanvasSpectrumWidget.call(this, config, buildGL, build2D);
     
-    var lvf, rvf, w, h;
+    //var lvf, rvf, w, h;
     function commonBeforeDraw(scheduledDraw) {
       view.n.listen(scheduledDraw);
       lvf = view.leftVisibleFreq();
@@ -921,6 +925,11 @@ define(['./basic', './dbui',
     }
     function drawHair(freq) {
       var x = freqToCoord(freq);
+      console.log("x freqToCoord: ", x);
+      console.log("w freqToCoord: ", w);
+      console.log("lvf freqToCoord: ", lvf);
+      console.log("rvf freqToCoord: ", rvf);
+      console.log("freq freqToCoord: ", freq);
       x = Math.floor(x) + 0.5;
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -969,6 +978,7 @@ define(['./basic', './dbui',
         var receiver = receivers[recKey].depend(draw);
         var device_name_now = receiver.device_name.depend(draw);
         var rec_freq_now = receiver.rec_freq.depend(draw);
+        global_rec_freq_now = rec_freq_now;
         
         if (!(lvf <= rec_freq_now && rec_freq_now <= rvf && device_name_now === visibleDevice)) {
           continue;
@@ -1165,21 +1175,11 @@ define(['./basic', './dbui',
       const el = document.createElement('span');
       el.className = 'freqscale-band';
 
-      // JG add start
       /* 
         JG this is where the label text is set, could possibly use this method and make our own
         text drawing function and pull in the record.label || record.mode content to our draw
         or possibly just modify the existing draw to do what we want
-
-        Add a button in the menu for the user to select or deselect the new label method
       */
-      // this rfWindow textBox draws a box on bottom, not what we need
-      var rfWindow = document.getElementById("rf-spectrum-monitor");
-      //var textBox = rfWindow.appendChild(document.createElement('div'));
-      //textBox.textContent = record.label || record.mode;  // this looks really bad, prints a bunch of times, maybe because it's a div?
-      console.log("addBand");
-      // JG add end
-
       el.textContent = record.label || record.mode;
       el.my_update = function () {
         console.log("\n\naddBand:el.my_update = function()\n\n");   // JG added
@@ -1195,38 +1195,33 @@ define(['./basic', './dbui',
         var width;
 
         // mousemove works but it doesn't update the label drawing method on checkbox tick
-        // until the mouse is moved so I might need to rearrange how this happens
+        // until the mouse is moved so I might need to change how this happens
         var offset = $("#rf-spectrum-monitor").offset();
         $(document).mousemove(function(e) {
           //console.log("mousemove function");
           mouse_x_pos = e.pageX - offset.left;
           mouse_y_pos = e.pageY;  // not sure about offset for y
-          //console.log("mouse_x_pos: ", mouse_x_pos);
+          console.log("mouse_x_pos: ", mouse_x_pos);
           //console.log("el.style.left: ", el.style.left);
           //console.log("el.style.width: ", el.style.width);
-          left = parseFloat(el.style.left);
-          width = parseFloat(el.style.width);
+          left = parseFloat(view.freqToCSSLeft(labelLower));
+          width = parseFloat(view.freqToCSSLength(labelUpper - labelLower));
+          console.log("\n\n\n\n\n\n");
+          console.log("lower: ", labelLower);
+          console.log("upper: ", labelUpper);
+          console.log("\n\n\n\n\n\n");
           //console.log("left: ", left);
           //console.log("width: ", width);
+          
+          var box = document.getElementById("cbTest");
 
-          // this draws the correct label on mouseover but breaks when the window is zoomed in or out
-          // maybe check for window zoom before doing this to fix
-          // I think it's because when a zoom happens, el.style.width gets bigger or smaller but 
-          // we're accounting for the entire width including the part that is now off the window
-          // and not the the part of the label that is currently included in the window
+          // converting mouse position to frequency, these come from WaterFallPlot (moved them to global)
+          var mouse_freq = (mouse_x_pos * (rvf - lvf)) / w + lvf;
 
           // check to see if Labels checkbox is checked, if it is then use this method
           // to draw labels on mouseover. This works but it's really slow
-          var box = document.getElementById("cbTest");
-
-          // now that mouseover logic is "working" I need to create a new method of drawing
-          // a label on mouse position when mousing over the spectrum, or finding a way to draw
-          // the existing label on mouse position instead of at the bottom
           if (box.checked) {
-            // thinking about changing the draw to take into account mouse position
-            // along the frequency bar, like the vertical white slider with the frequency
-            // instead of basing it on current label dimensions
-            if (mouse_x_pos > left && mouse_x_pos < left + width) {
+            if (mouse_freq > labelLower && mouse_freq < labelUpper) {
               //console.log("if success");
               el.style.display = 'block';
             }
