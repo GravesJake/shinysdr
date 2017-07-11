@@ -1190,44 +1190,67 @@ define(['./basic', './dbui',
         var width;
 
         // mousemove works but it doesn't update the label drawing method on checkbox tick
-        // until the mouse is moved so I might need to change how this happens
+        // until the mouse is moved so I might need to change how that happens
         var offset = $("#rf-spectrum-monitor").offset();
         var window_width = $("#rf-spectrum-monitor").width();
+
+        //var annotation_label = document.getElementById("annotation-label");//.textContent = el.textContent;
+        var annotation_freq = document.getElementById("annotation-freq");
+
+        var box = document.getElementById("cbTest");
+
         $(document).mousemove(function(e) {
-          //console.log("mousemove function");
           mouse_x_pos = e.pageX - offset.left;
           mouse_y_pos = e.pageY;  // not sure about offset for y
-          console.log("mouse_x_pos: ", mouse_x_pos);
-          //console.log("el.style.left: ", el.style.left);
-          //console.log("el.style.width: ", el.style.width);
+          //console.log("mouse_x_pos: ", mouse_x_pos);
           left = parseFloat(view.freqToCSSLeft(labelLower));
           width = parseFloat(view.freqToCSSLength(labelUpper - labelLower));
-          /*
-          console.log("\n\n\n\n\n\n");
-          console.log("lower: ", labelLower);
-          console.log("upper: ", labelUpper);
-          console.log("\n\n\n\n\n\n");
-          //console.log("left: ", left);
-          //console.log("width: ", width);
-          */
-          var box = document.getElementById("cbTest");
 
-          // converting mouse position to frequency, these come from WaterFallPlot (moved them to global)
+          // converting mouse position to frequency, these come from WaterFallPlot (moved them to global to access them here)
           var mouse_freq = (mouse_x_pos * (rvf - lvf)) / w + lvf;
+          annotation_freq.textContent = parseInt(mouse_freq);
+          // this just sets the text window content to whatever the last label in the RF window is
+          // need to figure out how to get textContent from mouse x position or mouse freq
+
+          //console.log("el.textContent: ", el.textContent);
+          //console.log("el.style.display: ", el.style.display);
+          var labels2 = document.getElementsByClassName("freqscale-band");
+          console.log("labels2.length: ", labels2.length);
+
+          var annotation_label = document.getElementById("annotation-label");
+          var label_display;
+          for (var i = 0; i < labels2.length; ++i) {
+            label_display = labels2[i];
+
+            // if the mouse is currently over what would be a label, draw it in the box
+            if (label_display.style.display == 'block') 
+              annotation_label.textContent = label_display.textContent;
+          }
 
           // check to see if Labels checkbox is checked, if it is then use this method to draw labels on mouseover. This works but it's really slow
           if (box.checked) {
+            //el.style.width = 0;
             if (mouse_freq > labelLower && mouse_freq < labelUpper && mouse_x_pos > 0 && mouse_x_pos < window_width) {
-              //console.log("if success");
               el.style.display = 'block';
+              //annotation_label.textContent = el.textContent;//record.label || record.mode;
+              annotation_label.style.display = 'block';
+              annotation_freq.style.display = 'block';
             }
             else {
-              //console.log("else success");
               el.style.display = 'none';
             }
           }
-          else
+          else {
             el.style.display = 'block';
+          }
+
+          // this works unless the mouse is inside the RF Window when the page loads, then it doesn't hide
+          // these until the mouse is moused out of the window, then they stay hidden until the box is 
+          // checked and the mouse re-enters the RF window
+          if (mouse_x_pos < 0 || mouse_x_pos > window_width) {
+            annotation_label.style.display = 'none';
+            annotation_freq.style.display = 'none';
+          }
         })
   // JG add end
       };
@@ -1304,6 +1327,9 @@ define(['./basic', './dbui',
       labelCache.flush();
     });
     draw.scheduler = config.scheduler;
+
+    // here
+
     draw();
   }
   
