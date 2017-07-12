@@ -1177,7 +1177,7 @@ define(['./basic', './dbui',
       */
       el.textContent = record.label || record.mode;
       el.my_update = function () {
-        console.log("\n\naddBand:el.my_update = function()\n\n");   // JG added
+        //console.log("\n\naddBand:el.my_update = function()\n\n");   // JG added
         var labelLower = Math.max(record.lowerFreq, lower);
         var labelUpper = Math.min(record.upperFreq, upper);
         el.style.left = view.freqToCSSLeft(labelLower);
@@ -1185,69 +1185,87 @@ define(['./basic', './dbui',
         el.style.bottom = pickY(record.lowerFreq, record.upperFreq) + 'em';
 
   // JG add start
+        // these are used for mouse frequency logic
         var mouse_x_pos, mouse_y_pos;
-        var left;
-        var width;
 
         // mousemove works but it doesn't update the label drawing method on checkbox tick
         // until the mouse is moved so I might need to change how that happens
         var offset = $("#rf-spectrum-monitor").offset();
         var window_width = $("#rf-spectrum-monitor").width();
 
-        //var annotation_label = document.getElementById("annotation-label");//.textContent = el.textContent;
+        // these are used for drawing text in the Radio Config panel
+        var annotation_label = document.getElementById("annotation-label");
         var annotation_freq = document.getElementById("annotation-freq");
+        var label_freq;
 
         var box = document.getElementById("cbTest");
+        var stacked_labels = 0; // used to track the number of labels currently moused over
 
         $(document).mousemove(function(e) {
-          mouse_x_pos = e.pageX - offset.left;
-          mouse_y_pos = e.pageY;  // not sure about offset for y
-          //console.log("mouse_x_pos: ", mouse_x_pos);
-          left = parseFloat(view.freqToCSSLeft(labelLower));
-          width = parseFloat(view.freqToCSSLength(labelUpper - labelLower));
-
-          // converting mouse position to frequency, these come from WaterFallPlot (moved them to global to access them here)
-          var mouse_freq = (mouse_x_pos * (rvf - lvf)) / w + lvf;
-          annotation_freq.textContent = parseInt(mouse_freq);
-          // this just sets the text window content to whatever the last label in the RF window is
-          // need to figure out how to get textContent from mouse x position or mouse freq
-
-          //console.log("el.textContent: ", el.textContent);
-          //console.log("el.style.display: ", el.style.display);
-          var labels2 = document.getElementsByClassName("freqscale-band");
-          console.log("labels2.length: ", labels2.length);
-
-          var annotation_label = document.getElementById("annotation-label");
-          var label_display;
-          for (var i = 0; i < labels2.length; ++i) {
-            label_display = labels2[i];
-
-            // if the mouse is currently over what would be a label, draw it in the box
-            if (label_display.style.display == 'block') 
-              annotation_label.textContent = label_display.textContent;
-          }
-
+          // should probably handle this box check better so that it can be outside of mousemove
           // check to see if Labels checkbox is checked, if it is then use this method to draw labels on mouseover. This works but it's really slow
           if (box.checked) {
-            //el.style.width = 0;
+            el.style.width = 0;
+            mouse_x_pos = e.pageX - offset.left;
+            mouse_y_pos = e.pageY;  // not sure about offset for y, not used
+
+            // converting mouse position to frequency, these come from WaterFallPlot (moved them to global to access them here)
+            var mouse_freq = (mouse_x_pos * (rvf - lvf)) / w + lvf;
+            label_freq = parseInt(mouse_freq);
+            
+            // style
+            if (label_freq >= 1000000000) {
+              label_freq /= 1000000000;
+              annotation_freq.textContent = label_freq.toFixed(2) + "G";
+            }
+            else if (label_freq >= 1000000 && label_freq < 1000000000) {
+              label_freq /= 1000000;
+              annotation_freq.textContent = label_freq.toFixed(2) + "M";
+            }
+            else if (label_freq >= 1000 && label_freq < 1000000) {
+              label_freq /= 1000;
+              annotation_freq.textContent = label_freq.toFixed(2) + "k";
+            }
+            else
+              annotation_freq.textContent = label_freq.toFixed(2);
+                         
+            annotation_freq.textContent += "Hz";
+
+            // this is used to iterate through all the current bands on screen
+            var band_labels = document.getElementsByClassName("freqscale-band");
+
+            var label_display;
+            for (var i = 0; i < band_labels.length; ++i) {
+              // maybe make label_display an array and do label_display.append(band_labels[i])
+              // so that we can display more than one label at once
+              label_display = band_labels[i];
+
+              // if the mouse is currently over what would be a label, draw it in the box
+              // then here we'd do something like label_display[i].style.display here
+              // or maybe annotation_label needs to be an array of some kind for multiples
+              if (label_display.style.display == 'block') {
+                // need to display more than the band label, want to show low/high frequency of the band
+                // might have to pull data from the databases to get that info unless record gets
+                // passed to addBand with that info already
+                annotation_label.textContent = label_display.textContent;
+              }
+            }
+            
             if (mouse_freq > labelLower && mouse_freq < labelUpper && mouse_x_pos > 0 && mouse_x_pos < window_width) {
               el.style.display = 'block';
-              //annotation_label.textContent = el.textContent;//record.label || record.mode;
               annotation_label.style.display = 'block';
               annotation_freq.style.display = 'block';
+              //stacked_labels++; // trying to keep track of the number of labels currently moused over
             }
-            else {
+            else 
               el.style.display = 'none';
-            }
           }
           else {
+            el.style.width = view.freqToCSSLength(labelUpper - labelLower);
             el.style.display = 'block';
           }
 
-          // this works unless the mouse is inside the RF Window when the page loads, then it doesn't hide
-          // these until the mouse is moused out of the window, then they stay hidden until the box is 
-          // checked and the mouse re-enters the RF window
-          if (mouse_x_pos < 0 || mouse_x_pos > window_width) {
+          if (mouse_x_pos < 0 || mouse_x_pos > window_width || !box.checked) {
             annotation_label.style.display = 'none';
             annotation_freq.style.display = 'none';
           }
@@ -1281,7 +1299,6 @@ define(['./basic', './dbui',
     var scale_fine2 = 2;
     
     var draw = config.boundedFn(function drawImpl() {
-      console.log("var draw");  // JG added this
       view.n.listen(draw);
       lower = view.leftFreq();
       upper = view.rightFreq();
@@ -1327,9 +1344,6 @@ define(['./basic', './dbui',
       labelCache.flush();
     });
     draw.scheduler = config.scheduler;
-
-    // here
-
     draw();
   }
   
