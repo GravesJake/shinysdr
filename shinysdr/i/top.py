@@ -209,6 +209,7 @@ class Top(gr.top_block, ExportedState, RecursiveLockBlockMixin):
         return self.__audio_manager.get_channels()
 
     def _do_connect(self):
+        #log.msg(/http://localhost:8300/BSdCWPGd1e1q-1BxsM9CRw/)
         """Do all reconfiguration operations in the proper order."""
 
         if self.__in_reconnect:

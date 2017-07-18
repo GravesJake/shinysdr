@@ -56,6 +56,8 @@
   </div>
 </shinysdr-subwindow>
 
+
+
 <shinysdr-subwindow id="section-spectrum" class="stretchy" visible="true">
   <h2>RF Spectrum <span data-target="radio.monitor" data-widget="MonitorQuickOptions"></span></h2>
   <div id="rf-spectrum-monitor" data-widget="Monitor" data-target="radio.monitor" data-is-rf-spectrum=""></div>
@@ -84,6 +86,15 @@
   </div>
 </shinysdr-subwindow>
 
+
+
+
+
+
+
+
+
+
 <shinysdr-subwindow id="section-db" visible="true">
   <h2>Frequency DB</h2>
   <div class="sidebar frame">
@@ -95,8 +106,54 @@
         <div data-widget="PickWidget" data-target="client.databases"></div>
       </details>
     </div>
+    <div class="panel">
+      <details class="frame" id="choose-databases">
+        <summary>Annotate</summary>
+     
+          <form action= "/BSdCWPGd1e1q-1BxsM9CRw" method="get" >
+
+      <label>Low Frequency</label>
+      <input type = "text"
+      name = "low"
+      value = "" />
+      <br />
+
+      <label>High Frequency</label>
+      <input type = "text"
+      name = "high"
+      value = "" />
+      <br />
+
+      <label>Title</label>
+      <input type = "text"
+      name = "Title"
+      value = "" />  
+      <br />
+
+      <label>Comments</label>
+      <input type = "text"
+      name = "comment"
+      value = "" /> 
+      <br />  
+      <input type="submit" value="Submit"/> 
+        </form>
+        <!--add the text boxes here-->
+        <!--div data-widget="PickWidget" data-target="client.databases"></div>-->
+      </details>
+    </div>
   </div>
 </shinysdr-subwindow>
+
+
+
+
+
+
+
+
+
+
+
 
 <script src="/client/require.js"></script>
 <script>
