@@ -46,8 +46,7 @@ define(['./basic', './dbui',
   
   const exports = Object.create(null);
 
-  var save_lower = new Array();
-  var save_upper = new Array();
+  var save_lower, save_upper;
   var global_rec_freq_now;  // JG trying to use rec_freq_now inside of addBand
   var lvf, rvf, w, h;       // JG moved these from function WaterFallPlot() because I need these elsewhere
   // JG these get declared again on line ~922, should find a better way to do this
@@ -1237,10 +1236,8 @@ define(['./basic', './dbui',
                 el.style.display = 'block';
                 radio_config_label.style.display = 'block';
                 radio_config_freq.style.display = 'block';
-                if (!save_lower.includes(record.lowerFreq))
-                  save_lower.push(record.lowerFreq);
-                if (!save_upper.includes(record.upperFreq))
-                  save_upper.push(record.upperFreq); 
+                save_lower = record.lowerFreq;
+                save_upper = record.upperFreq;      
               }
               else 
                 el.style.display = 'none';
@@ -1248,7 +1245,7 @@ define(['./basic', './dbui',
               radio_config_label.textContent = '';
               for (var i = band_labels.length - 1; i >= 0; i--) {
                 if (band_labels[i].style.display == 'block') {
-                  radio_config_label.innerHTML += "<br/>" + band_labels[i].textContent + "<br/>" + save_lower[i] + " - " + save_upper[i]; // thanks mike
+                  radio_config_label.innerHTML += "<br/>" + band_labels[i].textContent + "<br/>" + save_lower + " - " + save_upper; // thanks mike
                 }
               }
             })
