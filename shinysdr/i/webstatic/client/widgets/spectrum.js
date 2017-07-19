@@ -46,6 +46,8 @@ define(['./basic', './dbui',
   
   const exports = Object.create(null);
 
+  var save_lower = new Array();
+  var save_upper = new Array();
   var global_rec_freq_now;  // JG trying to use rec_freq_now inside of addBand
   var lvf, rvf, w, h;       // JG moved these from function WaterFallPlot() because I need these elsewhere
   // JG these get declared again on line ~922, should find a better way to do this
@@ -1165,8 +1167,12 @@ define(['./basic', './dbui',
 
     function addBand(record) {
       const el = document.createElement('span');
+      const el2 = document.createElement('span');
       el.className = 'freqscale-band';
+      el2.className = 'freqscale-band2';
       el.textContent = record.label || record.mode;
+      el2.textContent = "2";
+
       el.my_update = function () {
         var labelLower = Math.max(record.lowerFreq, lower);
         var labelUpper = Math.min(record.upperFreq, upper);
@@ -1181,20 +1187,19 @@ define(['./basic', './dbui',
         var window_width = $("#rf-spectrum-monitor").width();
 
         // this is used for drawing text in the Radio Config panel
-        var annotation_label = document.getElementById("annotation-label");      
-        var annotation_freq = document.getElementById("annotation-freq");
+        var radio_config_label = document.getElementById("radio-config-label");      
+        var radio_config_freq = document.getElementById("radio-config-freq");
         var band_labels;
         var label_freq;
 
-        var checkbox = document.querySelector("input[id=cbTest]");
-
-        // this breaks when the RF Window is scrolled by the mouse while the Dynamic Labels box is checked
-        // unchecking and rechecking the box fixes it
-        $('input[id=cbTest]').change(function() {
+        console.log("ad");
+        var checkbox = document.querySelector("input[id=dynamic-labels]");
+        $('input[id=dynamic-labels]').change(function() {
           if ($(this).is(':checked')) {
-            el.style.width = 0;
+            el.style.width = 0;   // hide the RF Window Labels when box is checked
+            var k = 0;
             $(document).mousemove(function(e) {
-              el.style.width = 0;
+              el.style.width = 0; // keep the labels hidden on mousemove
               mouse_x_pos = e.pageX - offset.left;
 
               // converting mouse position to frequency, these come from WaterFallPlot (moved them to global to access them here)
@@ -1204,42 +1209,47 @@ define(['./basic', './dbui',
               // style 
               if (label_freq >= 1000000000) {
                 label_freq /= 1000000000;
-                annotation_freq.textContent = label_freq.toFixed(2) + "G";
+                radio_config_freq.textContent = label_freq.toFixed(2) + "G";
               }
               else if (label_freq >= 1000000 && label_freq < 1000000000) {
                 label_freq /= 1000000;
-                annotation_freq.textContent = label_freq.toFixed(2) + "M";
+                radio_config_freq.textContent = label_freq.toFixed(2) + "M";
               }
               else if (label_freq >= 1000 && label_freq < 1000000) {
                 label_freq /= 1000;
-                annotation_freq.textContent = label_freq.toFixed(2) + "k";
+                radio_config_freq.textContent = label_freq.toFixed(2) + "k";
               }
               else
-                annotation_freq.textContent = label_freq.toFixed(2);
-              annotation_freq.textContent += "Hz";
+                radio_config_freq.textContent = label_freq.toFixed(2);
+              radio_config_freq.textContent += "Hz";
 
               // this is used to iterate through all the current bands on screen
               band_labels = document.getElementsByClassName("freqscale-band");
 
               // make sure mouse is in the RF window
               if (mouse_x_pos < 0 || mouse_x_pos > window_width) {        
-                annotation_label.style.display = 'none';
-                annotation_freq.style.display = 'none';
+                radio_config_label.style.display = 'none';
+                radio_config_freq.style.display = 'none';
               }
 
-              // annotate the correct label(s)
+              // display the correct label(s)
               if (mouse_freq > labelLower && mouse_freq < labelUpper && mouse_x_pos > 0 && mouse_x_pos < window_width) {
                 el.style.display = 'block';
-                annotation_label.style.display = 'block';
-                annotation_freq.style.display = 'block';
+                radio_config_label.style.display = 'block';
+                radio_config_freq.style.display = 'block';
+                if (!save_lower.includes(record.lowerFreq))
+                  save_lower.push(record.lowerFreq);
+                if (!save_upper.includes(record.upperFreq))
+                  save_upper.push(record.upperFreq); 
               }
               else 
                 el.style.display = 'none';
 
-              annotation_label.textContent = '';
-              for (var i = 0; i < band_labels.length; ++i) {
-                if (band_labels[i].style.display == 'block') 
-                  annotation_label.innerHTML += "<br/>" + band_labels[i].textContent; // thanks mike
+              radio_config_label.textContent = '';
+              for (var i = band_labels.length - 1; i >= 0; i--) {
+                if (band_labels[i].style.display == 'block') {
+                  radio_config_label.innerHTML += "<br/>" + band_labels[i].textContent + "<br/>" + save_lower[i] + " - " + save_upper[i]; // thanks mike
+                }
               }
             })
           }
@@ -1247,8 +1257,8 @@ define(['./basic', './dbui',
             $(document).off('mousemove');
             el.style.width = view.freqToCSSLength(labelUpper - labelLower);
             el.style.display = 'block';
-            annotation_label.style.display = 'none';
-            annotation_freq.style.display = 'none';
+            radio_config_label.style.display = 'none';
+            radio_config_freq.style.display = 'none';
           }
         })      
 // JG add end
