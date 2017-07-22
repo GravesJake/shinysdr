@@ -46,11 +46,16 @@ define(['./basic', './dbui',
   
   const exports = Object.create(null);
 
-  var save_lower, save_upper;
-  var global_rec_freq_now;  // JG trying to use rec_freq_now inside of addBand
+// JG vars added
+  var recordArr = [];
+  var recordWhileCount;
+  var recordWhileFlag;
+  var tempLabel;
+  var pushRecord;
+  var globalChecked;
   var lvf, rvf, w, h;       // JG moved these from function WaterFallPlot() because I need these elsewhere
-  // JG these get declared again on line ~922, should find a better way to do this
-  
+// JG vars end
+
   // Widget for a monitor block
   function Monitor(config) {
     Block.call(this, config, function (block, addWidget, ignore, setInsertion, setToDetails, getAppend) {
@@ -972,7 +977,6 @@ define(['./basic', './dbui',
         var receiver = receivers[recKey].depend(draw);
         var device_name_now = receiver.device_name.depend(draw);
         var rec_freq_now = receiver.rec_freq.depend(draw);
-        global_rec_freq_now = rec_freq_now;
         
         if (!(lvf <= rec_freq_now && rec_freq_now <= rvf && device_name_now === visibleDevice)) {
           continue;
@@ -1166,11 +1170,8 @@ define(['./basic', './dbui',
 
     function addBand(record) {
       const el = document.createElement('span');
-      const el2 = document.createElement('span');
       el.className = 'freqscale-band';
-      el2.className = 'freqscale-band2';
       el.textContent = record.label || record.mode;
-      el2.textContent = "2";
 
       el.my_update = function () {
         var labelLower = Math.max(record.lowerFreq, lower);
@@ -1180,10 +1181,15 @@ define(['./basic', './dbui',
         el.style.bottom = pickY(record.lowerFreq, record.upperFreq) + 'em';
 
 // JG add start
+        // this check is needed for when the window is modified and new bands are added to the window while the box is checked
+        if (globalChecked)
+          el.style.display = 'none';
+        else
+          el.style.display = 'block';
+
         // these are used for mouse frequency logic
         var mouse_x_pos;
         var offset = $("#rf-spectrum-monitor").offset();
-        var window_width = $("#rf-spectrum-monitor").width();
 
         // this is used for drawing text in the Radio Config panel
         var radio_config_label = document.getElementById("radio-config-label");      
@@ -1191,14 +1197,33 @@ define(['./basic', './dbui',
         var band_labels;
         var label_freq;
 
-        console.log("ad");
+        // this determines whether or not a record is already in the array, if so we don't add it
+        pushRecord = true;
+        for (var i = 0; i < recordArr.length; i++) {
+          for (var j = 0; j < recordArr[i].low.length; j++) {
+            if (record.label == recordArr[i].label && record.lowerFreq == recordArr[i].low[j] && record.upperFreq == recordArr[i].high[j]) {
+              pushRecord = false;
+              break;
+            } 
+          }
+        }
+        
+        // add records to the array, records include labels and low/high frequencies
+        if (pushRecord)
+          recordArr.push({"label":record.label, "low":[record.lowerFreq], "high":[record.upperFreq]});
+
+        console.log("xyz");
         var checkbox = document.querySelector("input[id=dynamic-labels]");
         $('input[id=dynamic-labels]').change(function() {
           if ($(this).is(':checked')) {
-            el.style.width = 0;   // hide the RF Window Labels when box is checked
-            var k = 0;
-            $(document).mousemove(function(e) {
-              el.style.width = 0; // keep the labels hidden on mousemove
+            globalChecked = true;
+            el.style.display = 'none';   // hide the RF Window Labels when box is checked
+            radio_config_label.style.display = 'block';
+            radio_config_freq.style.display = 'block';
+            radio_config_label.innerHTML = '';
+            radio_config_freq.innerHTML = '';
+
+            $("#rf-spectrum-monitor").mousemove(function(e) {
               mouse_x_pos = e.pageX - offset.left;
 
               // converting mouse position to frequency, these come from WaterFallPlot (moved them to global to access them here)
@@ -1222,37 +1247,20 @@ define(['./basic', './dbui',
                 radio_config_freq.textContent = label_freq.toFixed(2);
               radio_config_freq.textContent += "Hz";
 
-              // this is used to iterate through all the current bands on screen
-              band_labels = document.getElementsByClassName("freqscale-band");
-
-              // make sure mouse is in the RF window
-              if (mouse_x_pos < 0 || mouse_x_pos > window_width) {        
-                radio_config_label.style.display = 'none';
-                radio_config_freq.style.display = 'none';
-              }
-
-              // display the correct label(s)
-              if (mouse_freq > labelLower && mouse_freq < labelUpper && mouse_x_pos > 0 && mouse_x_pos < window_width) {
-                el.style.display = 'block';
-                radio_config_label.style.display = 'block';
-                radio_config_freq.style.display = 'block';
-                save_lower = record.lowerFreq;
-                save_upper = record.upperFreq;      
-              }
-              else 
-                el.style.display = 'none';
-
-              radio_config_label.textContent = '';
-              for (var i = band_labels.length - 1; i >= 0; i--) {
-                if (band_labels[i].style.display == 'block') {
-                  radio_config_label.innerHTML += "<br/>" + band_labels[i].textContent + "<br/>" + save_lower + " - " + save_upper; // thanks mike
+              // display the correct label(s) along with their frequency ranges
+              radio_config_label.innerHTML = '';
+              for (var i = 0; i < recordArr.length; i++) {
+                for (var j = 0; j < recordArr[i].low.length; j++) {
+                  if (recordArr[i].low[j] < mouse_freq && mouse_freq < recordArr[i].high[j]) {
+                    radio_config_label.innerHTML += "<br/>" + recordArr[i].label + "<br/>" + recordArr[i].low[j] + "-" + recordArr[i].high[j];
+                  }
                 }
               }
             })
           }
           else {
-            $(document).off('mousemove');
-            el.style.width = view.freqToCSSLength(labelUpper - labelLower);
+            $("#rf-spectrum-monitor").off('mousemove');
+            globalChecked = false;
             el.style.display = 'block';
             radio_config_label.style.display = 'none';
             radio_config_freq.style.display = 'none';
